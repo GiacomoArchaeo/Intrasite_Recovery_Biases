@@ -1,0 +1,2 @@
+# Compendium of the Quarto project with R code and data for the article 'Italy’s empty hillforts: reassessing urban-centric biases through combined non-invasive prospection methods on a Samnite site (4th-3rd BC).'
+This repository contains the Quarto project with all data and R code required to fully reproduce analyses and figures for the following article: Fontana G. and W. de Neef (2023), Italy’s empty hillforts: reassessing urban-centric biases through combined non-invasive prospection methods on a Samnite site (4th-3rd BC).
