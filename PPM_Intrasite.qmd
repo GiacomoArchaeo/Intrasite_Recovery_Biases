@@ -1,0 +1,253 @@
+---
+title: "Intrasite Analysis of Recovery Biases for Artifact Identification"
+author: "Giacomo Fontana"
+colorlinks: true 
+number-sections: true
+code-line-numbers: true
+format:
+  #html: 
+    #code-fold: false
+  pdf:
+    echo: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#| Label: Load libraries
+
+library(sf)
+library(spatstat)
+library(raster)
+library(maptools)
+library(tidyverse)
+```
+
+# Data preparation
+```{r}
+#| Label: Load data
+
+# data loading
+finds <- st_read("input/vector/AHS23_finds_32N.shp")
+limits <- st_read("input/vector/limits_32N.shp")
+dem <- mask(crop(raster("input/raster/dem_32N.tif"), extent(limits)), limits)
+ndvi <- mask(crop(raster("input/raster/NDVI_32N.tif"), extent(limits)), limits)
+```
+
+# Erosion modelling
+```{r}
+#| Label: Erosion modelling
+
+slope <- terrain(dem, "slope")
+aspect <- terrain(dem, "aspect")
+
+l <- (1 + tan(slope))^2 # slope length factor
+s <- (sin(slope) / 0.0896) ^ 1.3 * (1 + 0.56 * sin(slope) / 0.0896) # slope steepness factor
+erosion <- l * s
+
+writeRaster(erosion, filename = "output/raster/erosion.tif", overwrite=TRUE)
+```
+
+```{r}
+# print
+par(mfrow=c(1,3))
+plot(dem, main = "Elevation")
+plot(erosion, main = "Erosion")
+plot(ndvi, main = "NDVI")
+
+jpeg(res=600, width = 14, height = 4.45, units = 'in', filename="output/figure/covariates.jpg")
+par(mfrow=c(1,3))
+plot(dem, main = "Elevation", cex.main = 1.5)
+plot(erosion, main = "Erosion", cex.main = 1.5, zlim = c(0, 80))
+plot(ndvi, main = "NDVI", cex.main = 1.5)
+dev.off()
+```
+
+# Point process model
+
+```{r}
+#| Label: pts preparation
+
+# unnest and factor conversion
+finds <- finds %>% # unnest geometry into two columns
+    mutate(x = unlist(map(finds$geometry,1)),
+           y = unlist(map(finds$geometry,2)))
+
+# pts
+win <- as.owin(limits)
+pts <- ppp(finds$x, finds$y, window=win)
+unitname(pts) <- "m"
+```
+
+```{r}
+#| Label: covariates preparation
+
+dem.im <- as.im.RasterLayer(dem)
+erosion.im <- as.im.RasterLayer(erosion)
+ndvi.im <- as.im.RasterLayer(ndvi)
+
+covlist <- list(dem.im,erosion.im,ndvi.im)
+covnames <- c("dem","erosion","ndvi")
+names(covlist) <- covnames
+```
+
+```{r}
+#| Label: Normalise rasters (keeping the covlist with the original values)
+
+normalise <- function(x){(x - min(x)) / (max(x) - min(x))}
+
+dem.im <- normalise(dem.im)
+erosion.im <- normalise(erosion.im)
+ndvi.im <- normalise(ndvi.im)
+```
+
+```{r}
+#| Label: Setting simulations
+numSims <- 999
+numRank <- 25
+```
+
+## Exploratory analysis
+```{r}
+#| Label: rhohat
+
+rhlist <- list()
+for (i in 1:length(covlist)) {
+  rh <- rhohat(pts, covlist[[i]], confidence=0.95)
+  rhlist[[length(rhlist) + 1]] <- rh
+}
+names(rhlist) <- covnames
+rm(rh)
+
+# plot
+par(mfrow=c(1,3))
+par(mai = c(0.3, 0.3, 0.5, 0.2)) # bottom, left, top, right
+plot(rhlist$dem, main="Nonparametric estimate as function of elevation", cex.main = 1.5, xlim=c(480,520), xlab="", ylab="", legend=F)
+plot(rhlist$erosion, main="Nonparametric estimate as function of erosion", cex.main = 1.5, xlim=c(0,50), xlab="", ylab="", legend=F)
+plot(rhlist$ndvi, main="Nonparametric estimate as function of NDVI", cex.main = 1.5, xlim=c(0,200), xlab="", ylab="", legend=F)
+
+# print
+jpeg(res=600, width = 14, height = 3, units = 'in', filename="output/figure/rhohat.jpg")
+par(mfrow=c(1,3))
+par(mai = c(0.3, 0.3, 0.5, 0.2)) # bottom, left, top, right
+plot(rhlist$dem, main="Nonparametric estimate as function of elevation", cex.main = 1.5, xlim=c(480,520), xlab="", ylab="", legend=F)
+plot(rhlist$erosion, main="Nonparametric estimate as function of erosion", cex.main = 1.5, xlim=c(0,50), xlab="", ylab="", legend=F)
+plot(rhlist$ndvi, main="Nonparametric estimate as function of NDVI", cex.main = 1.5, xlim=c(0,200), xlab="", ylab="", legend=F)
+dev.off()
+```
+
+```{r}
+#| Label: Exploratory CSR
+
+set.seed(123)
+Pcf.pts <- envelope(pts, fun=pcf, correction="iso", nsim=numSims, nrank=numRank)
+plot(Pcf.pts, ylim=c(0, 5), legend=FALSE, main="PCF not fitted")
+```
+
+## First-order
+
+```{r}
+mod1 <- ppm(pts, trend= ~ dem.im + erosion.im + ndvi.im, interaction=NULL, correction="iso")
+summary(mod1)
+```
+
+```{r}
+#| Label: intensity comparision
+
+# plot
+par(mfrow=c(1,3))
+par(mai = c(0.3, 0.5, 0.5, 0.8)) # bottom, left, top, right
+plot(raster(predict(mod1)), main="Finds predicted intensity", cex.main = 1.5)
+plot(raster(density(pts, sigma=12)), main="Finds density", cex.main = 1.5)
+plot(raster(Smooth(residuals(mod1), sigma=12)), main="Smoothed residual field of the fitted model", cex.main = 1.5)
+
+# print
+jpeg(res=600, width = 14, height = 4, units = 'in', filename="output/figure/densities.jpg")
+par(mfrow=c(1,3))
+par(mai = c(0.3, 0.5, 0.5, 0.8)) # bottom, left, top, right
+plot(raster(predict(mod1)), main="Finds predicted intensity", cex.main = 1.5)
+plot(raster(density(pts, sigma=12)), main="Finds density", cex.main = 1.5)
+plot(raster(Smooth(residuals(mod1), sigma=12)), main="Smoothed residual field of the fitted model", cex.main = 1.5)
+dev.off()
+```
+
+```{r}
+#| Label: fit and testing of first order
+
+mod1.a <- ppm(pts, trend= ~ dem.im + erosion.im, interaction=NULL, correction="iso") # without ndvi
+mod1.b <- ppm(pts, trend= ~ dem.im + erosion.im + ndvi.im, interaction=NULL, correction="iso") # with ndvi
+
+# test
+likelihood_ratio <- anova(mod1.a, mod1.b)
+LR <- likelihood_ratio$Deviance[2]
+df <- likelihood_ratio$Df[2]
+p.value.SCH <- 1 - pchisq(LR, df)
+print(p.value.SCH)
+```
+
+```{r}
+#| Label: inhomogeneous pair correlation function
+
+set.seed(123)
+Pcfinhom_mod1 <- envelope(mod1, fun=pcfinhom, correction="iso", nsim=numSims, nrank=numRank)
+plot(Pcfinhom_mod1, ylim=c(0, 5), legend=FALSE, main="PCF first-order model")
+```
+
+```{r}
+#| Label: print PCF
+
+jpeg(res=600, width = 14, height = 3, units = 'in', filename="output/figure/pcf.jpg")
+par(mfrow=c(1,2))
+par(mai = c(0.4, 0.5, 0.3, 0)) # bottom, left, top, right
+plot(Pcf.pts, ylim=c(0,8), legend=FALSE, main="PCF not fitted model")
+plot(Pcfinhom_mod1, ylim=c(0,4), legend=FALSE, main="PCF first-order model")
+dev.off()
+```
+
+# Summary image
+
+```{r}
+# plot
+
+par(mfrow=c(3,3))
+
+par(mai = c(0.3, 0.4, 0.5, 0.6)) # bottom, left, top, right
+plot(dem, main = "Elevation", cex.main = 1.5)
+plot(erosion, main = "Erosion", cex.main = 1.5, zlim = c(0, 80))
+plot(ndvi, main = "NDVI", cex.main = 1.5)
+
+par(mai = c(0.3, 0.4, 0.5, 0.6)) # bottom, left, top, right
+plot(rhlist$dem, main="Nonparametric estimate as function of elevation", cex.main = 1.5, xlim=c(480,520), xlab="", ylab="", legend=F)
+plot(rhlist$erosion, main="Nonparametric estimate as function of erosion", cex.main = 1.5, xlim=c(0,50), xlab="", ylab="", legend=F)
+plot(rhlist$ndvi, main="Nonparametric estimate as function of NDVI", cex.main = 1.5, xlim=c(0,200), xlab="", ylab="", legend=F)
+
+par(mai = c(0.3, 0.4, 0.5, 0.6)) # bottom, left, top, right
+plot(raster(Smooth(residuals(mod1), sigma=12)), main="Smoothed residual field of the fitted model", cex.main = 1.5)
+plot(Pcf.pts, ylim=c(0.5,4), xlab="", ylab="", legend=FALSE, main="PCF on the unfitted model", cex.main = 1.5)
+plot(Pcfinhom_mod1, ylim=c(0.5,4), xlab="", ylab="", legend=FALSE, main="PCF on the fitted model", cex.main = 1.5)
+```
+
+```{r}
+#| Label: print mosaic
+
+jpeg(res=600, width = 14, height = 11, units = 'in', filename="output/figure/mosaic.jpg")
+par(mfrow=c(3,3))
+
+par(mai = c(0.3, 0.4, 0.5, 0.6)) # bottom, left, top, right
+plot(dem, main = "Elevation", cex.main = 1.5)
+plot(erosion, main = "Erosion", cex.main = 1.5, zlim = c(0, 80))
+plot(ndvi, main = "NDVI", cex.main = 1.5)
+
+par(mai = c(0.3, 0.4, 0.5, 0.6)) # bottom, left, top, right
+plot(rhlist$dem, main="Nonparametric estimate as function of elevation", cex.main = 1.5, xlim=c(480,520), xlab="", ylab="", legend=F)
+plot(rhlist$erosion, main="Nonparametric estimate as function of erosion", cex.main = 1.5, xlim=c(0,50), xlab="", ylab="", legend=F)
+plot(rhlist$ndvi, main="Nonparametric estimate as function of NDVI", cex.main = 1.5, xlim=c(0,200), xlab="", ylab="", legend=F)
+
+par(mai = c(0.3, 0.4, 0.5, 0.6)) # bottom, left, top, right
+plot(raster(Smooth(residuals(mod1), sigma=12)), main="Smoothed residual field of the fitted model", cex.main = 1.5)
+plot(Pcf.pts, ylim=c(0.5,4), xlab="", ylab="", legend=FALSE, main="PCF on the unfitted model", cex.main = 1.5)
+plot(Pcfinhom_mod1, ylim=c(0.5,4), xlab="", ylab="", legend=FALSE, main="PCF on the fitted model", cex.main = 1.5)
+dev.off()
+```

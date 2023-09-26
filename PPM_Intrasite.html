@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.353">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Giacomo Fontana">
+
+<title>Intrasite Analysis of Recovery Biases for Artifact Identification</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="PPM_Intrasite_files/libs/clipboard/clipboard.min.js"></script>
+<script src="PPM_Intrasite_files/libs/quarto-html/quarto.js"></script>
+<script src="PPM_Intrasite_files/libs/quarto-html/popper.min.js"></script>
+<script src="PPM_Intrasite_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="PPM_Intrasite_files/libs/quarto-html/anchor.min.js"></script>
+<link href="PPM_Intrasite_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="PPM_Intrasite_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="PPM_Intrasite_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="PPM_Intrasite_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="PPM_Intrasite_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Intrasite Analysis of Recovery Biases for Artifact Identification</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Giacomo Fontana </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<div class="cell" data-label="Load libraries">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(spatstat)</span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(raster)</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(maptools)</span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="data-preparation" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Data preparation</h1>
+<div class="cell" data-label="Load data">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># data loading</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a>finds <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"input/vector/AHS23_finds_32N.shp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `AHS23_finds_32N' from data source 
+  `C:\Users\giaco\OneDrive - University College London\PhD\Data\R\PPM_Intrasite\input\vector\AHS23_finds_32N.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 645 features and 2 fields
+Geometry type: POINT
+Dimension:     XY
+Bounding box:  xmin: 946185.2 ymin: 4572682 xmax: 946562.6 ymax: 4573020
+Projected CRS: WGS 84 / UTM zone 32N</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>limits <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"input/vector/limits_32N.shp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `limits_32N' from data source 
+  `C:\Users\giaco\OneDrive - University College London\PhD\Data\R\PPM_Intrasite\input\vector\limits_32N.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 1 feature and 1 field
+Geometry type: POLYGON
+Dimension:     XY
+Bounding box:  xmin: 946136.1 ymin: 4572677 xmax: 946576.1 ymax: 4573057
+Projected CRS: WGS 84 / UTM zone 32N</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>dem <span class="ot">&lt;-</span> <span class="fu">mask</span>(<span class="fu">crop</span>(<span class="fu">raster</span>(<span class="st">"input/raster/dem_32N.tif"</span>), <span class="fu">extent</span>(limits)), limits)</span>
+<span id="cb6-2"><a href="#cb6-2"></a>ndvi <span class="ot">&lt;-</span> <span class="fu">mask</span>(<span class="fu">crop</span>(<span class="fu">raster</span>(<span class="st">"input/raster/NDVI_32N.tif"</span>), <span class="fu">extent</span>(limits)), limits)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="erosion-modelling" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Erosion modelling</h1>
+<div class="cell" data-label="Erosion modelling">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>slope <span class="ot">&lt;-</span> <span class="fu">terrain</span>(dem, <span class="st">"slope"</span>)</span>
+<span id="cb7-2"><a href="#cb7-2"></a>aspect <span class="ot">&lt;-</span> <span class="fu">terrain</span>(dem, <span class="st">"aspect"</span>)</span>
+<span id="cb7-3"><a href="#cb7-3"></a></span>
+<span id="cb7-4"><a href="#cb7-4"></a>l <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">tan</span>(slope))<span class="sc">^</span><span class="dv">2</span> <span class="co"># slope length factor</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a>s <span class="ot">&lt;-</span> (<span class="fu">sin</span>(slope) <span class="sc">/</span> <span class="fl">0.0896</span>) <span class="sc">^</span> <span class="fl">1.3</span> <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.56</span> <span class="sc">*</span> <span class="fu">sin</span>(slope) <span class="sc">/</span> <span class="fl">0.0896</span>) <span class="co"># slope steepness factor</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a>erosion <span class="ot">&lt;-</span> l <span class="sc">*</span> s</span>
+<span id="cb7-7"><a href="#cb7-7"></a></span>
+<span id="cb7-8"><a href="#cb7-8"></a><span class="fu">writeRaster</span>(erosion, <span class="at">filename =</span> <span class="st">"output/raster/erosion.tif"</span>, <span class="at">overwrite=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># print</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>))</span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="fu">plot</span>(dem, <span class="at">main =</span> <span class="st">"Elevation"</span>)</span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="fu">plot</span>(erosion, <span class="at">main =</span> <span class="st">"Erosion"</span>)</span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="fu">plot</span>(ndvi, <span class="at">main =</span> <span class="st">"NDVI"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="PPM_Intrasite_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="2800"></p>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">jpeg</span>(<span class="at">res=</span><span class="dv">600</span>, <span class="at">width =</span> <span class="dv">14</span>, <span class="at">height =</span> <span class="fl">4.45</span>, <span class="at">units =</span> <span class="st">'in'</span>, <span class="at">filename=</span><span class="st">"output/figure/covariates.jpg"</span>)</span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>))</span>
+<span id="cb9-3"><a href="#cb9-3"></a><span class="fu">plot</span>(dem, <span class="at">main =</span> <span class="st">"Elevation"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="fu">plot</span>(erosion, <span class="at">main =</span> <span class="st">"Erosion"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">zlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">80</span>))</span>
+<span id="cb9-5"><a href="#cb9-5"></a><span class="fu">plot</span>(ndvi, <span class="at">main =</span> <span class="st">"NDVI"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb9-6"><a href="#cb9-6"></a><span class="fu">dev.off</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>png 
+  2 </code></pre>
+</div>
+</div>
+</section>
+<section id="point-process-model" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Point process model</h1>
+<div class="cell" data-label="pts preparation">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="co"># unnest and factor conversion</span></span>
+<span id="cb11-2"><a href="#cb11-2"></a>finds <span class="ot">&lt;-</span> finds <span class="sc">%&gt;%</span> <span class="co"># unnest geometry into two columns</span></span>
+<span id="cb11-3"><a href="#cb11-3"></a>    <span class="fu">mutate</span>(<span class="at">x =</span> <span class="fu">unlist</span>(<span class="fu">map</span>(finds<span class="sc">$</span>geometry,<span class="dv">1</span>)),</span>
+<span id="cb11-4"><a href="#cb11-4"></a>           <span class="at">y =</span> <span class="fu">unlist</span>(<span class="fu">map</span>(finds<span class="sc">$</span>geometry,<span class="dv">2</span>)))</span>
+<span id="cb11-5"><a href="#cb11-5"></a></span>
+<span id="cb11-6"><a href="#cb11-6"></a><span class="co"># pts</span></span>
+<span id="cb11-7"><a href="#cb11-7"></a>win <span class="ot">&lt;-</span> <span class="fu">as.owin</span>(limits)</span>
+<span id="cb11-8"><a href="#cb11-8"></a>pts <span class="ot">&lt;-</span> <span class="fu">ppp</span>(finds<span class="sc">$</span>x, finds<span class="sc">$</span>y, <span class="at">window=</span>win)</span>
+<span id="cb11-9"><a href="#cb11-9"></a><span class="fu">unitname</span>(pts) <span class="ot">&lt;-</span> <span class="st">"m"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-label="covariates preparation">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>dem.im <span class="ot">&lt;-</span> <span class="fu">as.im.RasterLayer</span>(dem)</span>
+<span id="cb12-2"><a href="#cb12-2"></a>erosion.im <span class="ot">&lt;-</span> <span class="fu">as.im.RasterLayer</span>(erosion)</span>
+<span id="cb12-3"><a href="#cb12-3"></a>ndvi.im <span class="ot">&lt;-</span> <span class="fu">as.im.RasterLayer</span>(ndvi)</span>
+<span id="cb12-4"><a href="#cb12-4"></a></span>
+<span id="cb12-5"><a href="#cb12-5"></a>covlist <span class="ot">&lt;-</span> <span class="fu">list</span>(dem.im,erosion.im,ndvi.im)</span>
+<span id="cb12-6"><a href="#cb12-6"></a>covnames <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"dem"</span>,<span class="st">"erosion"</span>,<span class="st">"ndvi"</span>)</span>
+<span id="cb12-7"><a href="#cb12-7"></a><span class="fu">names</span>(covlist) <span class="ot">&lt;-</span> covnames</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-label="Normalise rasters (keeping the covlist with the original values)">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>normalise <span class="ot">&lt;-</span> <span class="cf">function</span>(x){(x <span class="sc">-</span> <span class="fu">min</span>(x)) <span class="sc">/</span> (<span class="fu">max</span>(x) <span class="sc">-</span> <span class="fu">min</span>(x))}</span>
+<span id="cb13-2"><a href="#cb13-2"></a></span>
+<span id="cb13-3"><a href="#cb13-3"></a>dem.im <span class="ot">&lt;-</span> <span class="fu">normalise</span>(dem.im)</span>
+<span id="cb13-4"><a href="#cb13-4"></a>erosion.im <span class="ot">&lt;-</span> <span class="fu">normalise</span>(erosion.im)</span>
+<span id="cb13-5"><a href="#cb13-5"></a>ndvi.im <span class="ot">&lt;-</span> <span class="fu">normalise</span>(ndvi.im)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-label="Setting simulations">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>numSims <span class="ot">&lt;-</span> <span class="dv">999</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a>numRank <span class="ot">&lt;-</span> <span class="dv">25</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="exploratory-analysis" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="exploratory-analysis"><span class="header-section-number">3.1</span> Exploratory analysis</h2>
+<div class="cell" data-label="rhohat">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a>rhlist <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(covlist)) {</span>
+<span id="cb15-3"><a href="#cb15-3"></a>  rh <span class="ot">&lt;-</span> <span class="fu">rhohat</span>(pts, covlist[[i]], <span class="at">confidence=</span><span class="fl">0.95</span>)</span>
+<span id="cb15-4"><a href="#cb15-4"></a>  rhlist[[<span class="fu">length</span>(rhlist) <span class="sc">+</span> <span class="dv">1</span>]] <span class="ot">&lt;-</span> rh</span>
+<span id="cb15-5"><a href="#cb15-5"></a>}</span>
+<span id="cb15-6"><a href="#cb15-6"></a><span class="fu">names</span>(rhlist) <span class="ot">&lt;-</span> covnames</span>
+<span id="cb15-7"><a href="#cb15-7"></a><span class="fu">rm</span>(rh)</span>
+<span id="cb15-8"><a href="#cb15-8"></a></span>
+<span id="cb15-9"><a href="#cb15-9"></a><span class="co"># plot</span></span>
+<span id="cb15-10"><a href="#cb15-10"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>))</span>
+<span id="cb15-11"><a href="#cb15-11"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.2</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb15-12"><a href="#cb15-12"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>dem, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of elevation"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">480</span>,<span class="dv">520</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb15-13"><a href="#cb15-13"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>erosion, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of erosion"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">50</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb15-14"><a href="#cb15-14"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>ndvi, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of NDVI"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">200</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="PPM_Intrasite_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="2800"></p>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="co"># print</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a><span class="fu">jpeg</span>(<span class="at">res=</span><span class="dv">600</span>, <span class="at">width =</span> <span class="dv">14</span>, <span class="at">height =</span> <span class="dv">3</span>, <span class="at">units =</span> <span class="st">'in'</span>, <span class="at">filename=</span><span class="st">"output/figure/rhohat.jpg"</span>)</span>
+<span id="cb16-3"><a href="#cb16-3"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>))</span>
+<span id="cb16-4"><a href="#cb16-4"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.2</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb16-5"><a href="#cb16-5"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>dem, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of elevation"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">480</span>,<span class="dv">520</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb16-6"><a href="#cb16-6"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>erosion, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of erosion"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">50</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb16-7"><a href="#cb16-7"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>ndvi, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of NDVI"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">200</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb16-8"><a href="#cb16-8"></a><span class="fu">dev.off</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>png 
+  2 </code></pre>
+</div>
+</div>
+<div class="cell" data-label="Exploratory CSR">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb18-2"><a href="#cb18-2"></a>Pcf.pts <span class="ot">&lt;-</span> <span class="fu">envelope</span>(pts, <span class="at">fun=</span>pcf, <span class="at">correction=</span><span class="st">"iso"</span>, <span class="at">nsim=</span>numSims, <span class="at">nrank=</span>numRank)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 999 simulations of CSR  ...
+1, 2, 3, ......10 [etd 13:01] .........20 [etd 11:19] .........
+30 [etd 11:11] .........40 [etd 10:59] .........50 [etd 10:42] ........
+.60 [etd 10:23] .........70 [etd 10:18] .........80 [etd 10:08] .......
+..90 [etd 10:01] .........100 [etd 9:57] .........110 [etd 9:48] ......
+...120 [etd 9:41] .........130 [etd 9:34] .........140 [etd 9:24] .....
+....150 [etd 9:16] .........160 [etd 9:08] .........170 [etd 9:02] ....
+.....180 [etd 8:55] .........190 [etd 8:49] .........200 [etd 8:42] ...
+......210 [etd 8:36] .........220 [etd 8:30] .........230 [etd 8:23] ..
+.......240 [etd 8:16] .........250 [etd 8:09] .........260 [etd 8:03] .
+........270 [etd 7:56] .........280 [etd 7:50] .........290
+ [etd 7:45] .........300 [etd 7:38] .........310 [etd 7:31] .........
+320 [etd 7:25] .........330 [etd 7:18] .........340 [etd 7:12] ........
+.350 [etd 7:04] .........360 [etd 6:57] .........370 [etd 6:51] .......
+..380 [etd 6:45] .........390 [etd 6:38] .........400 [etd 6:31] ......
+...410 [etd 6:24] .........420 [etd 6:21] .........430 [etd 6:29] .....
+....440 [etd 6:31] .........450 [etd 6:26] .........460 [etd 6:20] ....
+.....470 [etd 6:16] .........480 [etd 6:10] .........490 [etd 6:04] ...
+......500 [etd 5:58] .........510 [etd 5:52] .........520 [etd 5:45] ..
+.......530 [etd 5:38] .........540 [etd 5:31] .........550 [etd 5:23] .
+........560 [etd 5:16] .........570 [etd 5:09] .........580
+ [etd 5:01] .........590 [etd 4:54] .........600 [etd 4:46] .........
+610 [etd 4:38] .........620 [etd 4:31] .........630 [etd 4:23] ........
+.640 [etd 4:16] .........650 [etd 4:08] .........660 [etd 4:01] .......
+..670 [etd 3:54] .........680 [etd 3:46] .........690 [etd 3:39] ......
+...700 [etd 3:32] .........710 [etd 3:24] .........720 [etd 3:17] .....
+....730 [etd 3:10] .........740 [etd 3:03] .........750 [etd 2:56] ....
+.....760 [etd 2:48] .........770 [etd 2:41] .........780 [etd 2:34] ...
+......790 [etd 2:27] .........800 [etd 2:20] .........810 [etd 2:12] ..
+.......820 [etd 2:05] .........830 [etd 1:58] .........840 [etd 1:51] .
+........850 [etd 1:44] .........860 [etd 1:37] .........870
+ [etd 1:30] .........880 [etd 1:23] .........890 [etd 1:16] .........
+900 [etd 1:09] .........910 [etd 1:02] .........920 [etd 55 sec] ........
+.930 [etd 48 sec] .........940 [etd 41 sec] .........950 [etd 34 sec] .......
+..960 [etd 27 sec] .........970 [etd 20 sec] .........980 [etd 13 sec] ......
+...990 [etd 6 sec] ........ 999.
+
+Done.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">plot</span>(Pcf.pts, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">5</span>), <span class="at">legend=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="st">"PCF not fitted"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="PPM_Intrasite_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="2800"></p>
+</div>
+</div>
+</section>
+<section id="first-order" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="first-order"><span class="header-section-number">3.2</span> First-order</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a>mod1 <span class="ot">&lt;-</span> <span class="fu">ppm</span>(pts, <span class="at">trend=</span> <span class="sc">~</span> dem.im <span class="sc">+</span> erosion.im <span class="sc">+</span> ndvi.im, <span class="at">interaction=</span><span class="cn">NULL</span>, <span class="at">correction=</span><span class="st">"iso"</span>)</span>
+<span id="cb21-2"><a href="#cb21-2"></a><span class="fu">summary</span>(mod1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Point process model
+Fitting method: maximum likelihood (Berman-Turner approximation)
+Model was fitted using glm()
+Algorithm converged
+Call:
+ppm.ppp(Q = pts, trend = ~dem.im + erosion.im + ndvi.im, interaction = NULL, 
+    correction = "iso")
+Edge correction: "isotropic"
+--------------------------------------------------------------------------------
+Quadrature scheme (Berman-Turner) = data + dummy + weights
+
+Data pattern:
+Planar point pattern:  644 points
+Average intensity 0.00597 points per square m
+Window: polygonal boundary
+single connected closed polygon with 109 vertices
+enclosing rectangle: [946136.1, 946576.1] x [4572677, 4573057] m
+                     (440 x 380 m)
+Window area = 107786 square m
+Unit of length: 1 m
+Fraction of frame area: 0.645
+
+Dummy quadrature points:
+     64 x 64 grid of dummy points, plus 4 corner points
+     dummy spacing: 6.8750 x 5.9375 m
+
+Original dummy parameters: =
+Planar point pattern:  2710 points
+Average intensity 0.0251 points per square m
+Window: polygonal boundary
+single connected closed polygon with 109 vertices
+enclosing rectangle: [946136.1, 946576.1] x [4572677, 4573057] m
+                     (440 x 380 m)
+Window area = 107786 square m
+Unit of length: 1 m
+Fraction of frame area: 0.645
+Quadrature weights:
+     (counting weights based on 64 x 64 array of rectangular tiles)
+All weights:
+    range: [2.4, 40.8]  total: 107000
+Weights on data points:
+    range: [2.4, 20.4]  total: 8820
+Weights on dummy points:
+    range: [2.4, 40.8]  total: 98600
+--------------------------------------------------------------------------------
+FITTED MODEL:
+
+Nonstationary Poisson process
+
+---- Intensity: ----
+
+Log intensity: ~dem.im + erosion.im + ndvi.im
+Model depends on external covariates 'dem.im', 'erosion.im' and 'ndvi.im'
+Covariates provided:
+    dem.im: im
+    erosion.im: im
+    ndvi.im: im
+
+Fitted trend coefficients:
+(Intercept)      dem.im  erosion.im     ndvi.im 
+-7.48620487  3.69663873 -6.20655362  0.01731284 
+
+               Estimate      S.E.     CI95.lo   CI95.hi Ztest         Zval
+(Intercept) -7.48620487 0.2095590  -7.8969330 -7.075477   *** -35.72361280
+dem.im       3.69663873 0.2462823   3.2139342  4.179343   ***  15.00976011
+erosion.im  -6.20655362 3.7825367 -13.6201893  1.207082        -1.64084426
+ndvi.im      0.01731284 0.2501674  -0.4730063  0.507632         0.06920501
+
+----------- gory details -----
+
+Fitted regular parameters (theta):
+(Intercept)      dem.im  erosion.im     ndvi.im 
+-7.48620487  3.69663873 -6.20655362  0.01731284 
+
+Fitted exp(theta):
+ (Intercept)       dem.im   erosion.im      ndvi.im 
+5.607671e-04 4.031158e+01 2.016174e-03 1.017464e+00 
+Problem:
+ Values of the covariate 'erosion.im' were NA or undefined at 0.39% (13 out of 3354) of the quadrature points </code></pre>
+</div>
+</div>
+<div class="cell" data-label="intensity comparision">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="co"># plot</span></span>
+<span id="cb23-2"><a href="#cb23-2"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>))</span>
+<span id="cb23-3"><a href="#cb23-3"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb23-4"><a href="#cb23-4"></a><span class="fu">plot</span>(<span class="fu">raster</span>(<span class="fu">predict</span>(mod1)), <span class="at">main=</span><span class="st">"Finds predicted intensity"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb23-5"><a href="#cb23-5"></a><span class="fu">plot</span>(<span class="fu">raster</span>(<span class="fu">density</span>(pts, <span class="at">sigma=</span><span class="dv">12</span>)), <span class="at">main=</span><span class="st">"Finds density"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb23-6"><a href="#cb23-6"></a><span class="fu">plot</span>(<span class="fu">raster</span>(<span class="fu">Smooth</span>(<span class="fu">residuals</span>(mod1), <span class="at">sigma=</span><span class="dv">12</span>)), <span class="at">main=</span><span class="st">"Smoothed residual field of the fitted model"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="PPM_Intrasite_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="2800"></p>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="co"># print</span></span>
+<span id="cb24-2"><a href="#cb24-2"></a><span class="fu">jpeg</span>(<span class="at">res=</span><span class="dv">600</span>, <span class="at">width =</span> <span class="dv">14</span>, <span class="at">height =</span> <span class="dv">4</span>, <span class="at">units =</span> <span class="st">'in'</span>, <span class="at">filename=</span><span class="st">"output/figure/densities.jpg"</span>)</span>
+<span id="cb24-3"><a href="#cb24-3"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>))</span>
+<span id="cb24-4"><a href="#cb24-4"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb24-5"><a href="#cb24-5"></a><span class="fu">plot</span>(<span class="fu">raster</span>(<span class="fu">predict</span>(mod1)), <span class="at">main=</span><span class="st">"Finds predicted intensity"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb24-6"><a href="#cb24-6"></a><span class="fu">plot</span>(<span class="fu">raster</span>(<span class="fu">density</span>(pts, <span class="at">sigma=</span><span class="dv">12</span>)), <span class="at">main=</span><span class="st">"Finds density"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb24-7"><a href="#cb24-7"></a><span class="fu">plot</span>(<span class="fu">raster</span>(<span class="fu">Smooth</span>(<span class="fu">residuals</span>(mod1), <span class="at">sigma=</span><span class="dv">12</span>)), <span class="at">main=</span><span class="st">"Smoothed residual field of the fitted model"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb24-8"><a href="#cb24-8"></a><span class="fu">dev.off</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>png 
+  2 </code></pre>
+</div>
+</div>
+<p>Smoothed residual field: positive values of s(u) suggest that there is an overabundance of data points relative to the prediction of the model, that is, they suggest that the model underestimates the true intensity. Negative values of s(u) suggest that the model overestimates the true intensity.</p>
+<div class="cell" data-label="fit and testing of first order">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a>mod1.a <span class="ot">&lt;-</span> <span class="fu">ppm</span>(pts, <span class="at">trend=</span> <span class="sc">~</span> dem.im <span class="sc">+</span> erosion.im, <span class="at">interaction=</span><span class="cn">NULL</span>, <span class="at">correction=</span><span class="st">"iso"</span>) <span class="co"># without ndvi</span></span>
+<span id="cb26-2"><a href="#cb26-2"></a>mod1.b <span class="ot">&lt;-</span> <span class="fu">ppm</span>(pts, <span class="at">trend=</span> <span class="sc">~</span> dem.im <span class="sc">+</span> erosion.im <span class="sc">+</span> ndvi.im, <span class="at">interaction=</span><span class="cn">NULL</span>, <span class="at">correction=</span><span class="st">"iso"</span>) <span class="co"># with ndvi</span></span>
+<span id="cb26-3"><a href="#cb26-3"></a></span>
+<span id="cb26-4"><a href="#cb26-4"></a><span class="co"># test</span></span>
+<span id="cb26-5"><a href="#cb26-5"></a>likelihood_ratio <span class="ot">&lt;-</span> <span class="fu">anova</span>(mod1.a, mod1.b)</span>
+<span id="cb26-6"><a href="#cb26-6"></a>LR <span class="ot">&lt;-</span> likelihood_ratio<span class="sc">$</span>Deviance[<span class="dv">2</span>]</span>
+<span id="cb26-7"><a href="#cb26-7"></a>df <span class="ot">&lt;-</span> likelihood_ratio<span class="sc">$</span>Df[<span class="dv">2</span>]</span>
+<span id="cb26-8"><a href="#cb26-8"></a>p.value.SCH <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">pchisq</span>(LR, df)</span>
+<span id="cb26-9"><a href="#cb26-9"></a><span class="fu">print</span>(p.value.SCH)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.9448648</code></pre>
+</div>
+</div>
+<div class="cell" data-label="inhomogeneous pair correlation function">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb28-2"><a href="#cb28-2"></a>Pcfinhom_mod1 <span class="ot">&lt;-</span> <span class="fu">envelope</span>(mod1, <span class="at">fun=</span>pcfinhom, <span class="at">correction=</span><span class="st">"iso"</span>, <span class="at">nsim=</span>numSims, <span class="at">nrank=</span>numRank)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 999 simulated realisations of fitted Poisson model  ...
+1, 2, 3, ......10 [etd 14:04] .........20 [etd 15:47] .........
+30 [etd 16:09] .........40 [etd 15:28] .........50 [etd 15:23] ........
+.60 [etd 16:14] .........70 [etd 16:33] .........80 [etd 16:50] .......
+..90 [etd 16:40] .........100 [etd 16:24] .........110 [etd 16:24] ......
+...120 [etd 16:14] .........130 [etd 16:08] .........140 [etd 15:55] .....
+....150 [etd 15:31] .........160 [etd 15:10] .........170 [etd 14:48] ....
+.....180 [etd 14:27] .........190 [etd 14:08] .........200 [etd 13:49] ...
+......210 [etd 13:33] .........220 [etd 13:17] .........230 [etd 13:01] ..
+.......240 [etd 12:45] .........250 [etd 12:33] .........260 [etd 12:21] .
+........270 [etd 12:08] .........280 [etd 11:54] .........290
+ [etd 11:41] .........300 [etd 11:30] .........310 [etd 11:21] .........
+320 [etd 11:11] .........330 [etd 11:01] .........340 [etd 10:49] ........
+.350 [etd 10:38] .........360 [etd 10:28] .........370 [etd 10:17] .......
+..380 [etd 10:06] .........390 [etd 9:55] .........400 [etd 9:43] ......
+...410 [etd 9:32] .........420 [etd 9:21] .........430 [etd 9:10] .....
+....440 [etd 8:59] .........450 [etd 8:48] .........460 [etd 8:37] ....
+.....470 [etd 8:27] .........480 [etd 8:16] .........490 [etd 8:05] ...
+......500 [etd 7:55] .........510 [etd 7:45] .........520 [etd 7:35] ..
+.......530 [etd 7:25] .........540 [etd 7:15] .........550 [etd 7:05] .
+........560 [etd 6:55] .........570 [etd 6:45] .........580
+ [etd 6:35] .........590 [etd 6:24] .........600 [etd 6:14] .........
+610 [etd 6:04] .........620 [etd 5:54] .........630 [etd 5:44] ........
+.640 [etd 5:34] .........650 [etd 5:25] .........660 [etd 5:15] .......
+..670 [etd 5:05] .........680 [etd 4:56] .........690 [etd 4:46] ......
+...700 [etd 4:36] .........710 [etd 4:27] .........720 [etd 4:17] .....
+....730 [etd 4:08] .........740 [etd 3:59] .........750 [etd 3:50] ....
+.....760 [etd 3:40] .........770 [etd 3:31] .........780 [etd 3:22] ...
+......790 [etd 3:12] .........800 [etd 3:03] .........810 [etd 2:54] ..
+.......820 [etd 2:45] .........830 [etd 2:36] .........840 [etd 2:26] .
+........850 [etd 2:17] .........860 [etd 2:09] .........870
+ [etd 2:01] .........880 [etd 1:53] .........890 [etd 1:45] .........
+900 [etd 1:35] .........910 [etd 1:26] .........920 [etd 1:16] ........
+.930 [etd 1:07] .........940 [etd 57 sec] .........950 [etd 48 sec] .......
+..960 [etd 38 sec] .........970 [etd 28 sec] .........980 [etd 19 sec] ......
+...990 [etd 9 sec] ........ 999.
+
+Done.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="fu">plot</span>(Pcfinhom_mod1, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">5</span>), <span class="at">legend=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="st">"PCF first-order model"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="PPM_Intrasite_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid" width="2800"></p>
+</div>
+</div>
+<div class="cell" data-label="print PCF">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a><span class="fu">jpeg</span>(<span class="at">res=</span><span class="dv">600</span>, <span class="at">width =</span> <span class="dv">14</span>, <span class="at">height =</span> <span class="dv">3</span>, <span class="at">units =</span> <span class="st">'in'</span>, <span class="at">filename=</span><span class="st">"output/figure/pcf.jpg"</span>)</span>
+<span id="cb31-2"><a href="#cb31-2"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb31-3"><a href="#cb31-3"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.4</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>, <span class="dv">0</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb31-4"><a href="#cb31-4"></a><span class="fu">plot</span>(Pcf.pts, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">8</span>), <span class="at">legend=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="st">"PCF not fitted model"</span>)</span>
+<span id="cb31-5"><a href="#cb31-5"></a><span class="fu">plot</span>(Pcfinhom_mod1, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">4</span>), <span class="at">legend=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="st">"PCF first-order model"</span>)</span>
+<span id="cb31-6"><a href="#cb31-6"></a><span class="fu">dev.off</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>png 
+  2 </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="summary-image" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Summary image</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a><span class="co"># plot</span></span>
+<span id="cb33-2"><a href="#cb33-2"></a></span>
+<span id="cb33-3"><a href="#cb33-3"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">3</span>))</span>
+<span id="cb33-4"><a href="#cb33-4"></a></span>
+<span id="cb33-5"><a href="#cb33-5"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.4</span>, <span class="fl">0.5</span>, <span class="fl">0.6</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb33-6"><a href="#cb33-6"></a><span class="fu">plot</span>(dem, <span class="at">main =</span> <span class="st">"Elevation"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb33-7"><a href="#cb33-7"></a><span class="fu">plot</span>(erosion, <span class="at">main =</span> <span class="st">"Erosion"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">zlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">80</span>))</span>
+<span id="cb33-8"><a href="#cb33-8"></a><span class="fu">plot</span>(ndvi, <span class="at">main =</span> <span class="st">"NDVI"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb33-9"><a href="#cb33-9"></a></span>
+<span id="cb33-10"><a href="#cb33-10"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.4</span>, <span class="fl">0.5</span>, <span class="fl">0.6</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb33-11"><a href="#cb33-11"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>dem, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of elevation"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">480</span>,<span class="dv">520</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb33-12"><a href="#cb33-12"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>erosion, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of erosion"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">50</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb33-13"><a href="#cb33-13"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>ndvi, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of NDVI"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">200</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb33-14"><a href="#cb33-14"></a></span>
+<span id="cb33-15"><a href="#cb33-15"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.4</span>, <span class="fl">0.5</span>, <span class="fl">0.6</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb33-16"><a href="#cb33-16"></a><span class="fu">plot</span>(<span class="fu">raster</span>(<span class="fu">Smooth</span>(<span class="fu">residuals</span>(mod1), <span class="at">sigma=</span><span class="dv">12</span>)), <span class="at">main=</span><span class="st">"Smoothed residual field of the fitted model"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb33-17"><a href="#cb33-17"></a><span class="fu">plot</span>(Pcf.pts, <span class="at">ylim=</span><span class="fu">c</span>(<span class="fl">0.5</span>,<span class="dv">4</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="st">"PCF on the unfitted model"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb33-18"><a href="#cb33-18"></a><span class="fu">plot</span>(Pcfinhom_mod1, <span class="at">ylim=</span><span class="fu">c</span>(<span class="fl">0.5</span>,<span class="dv">4</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="st">"PCF on the fitted model"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="PPM_Intrasite_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid" width="2800"></p>
+</div>
+</div>
+<div class="cell" data-label="print mosaic">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="fu">jpeg</span>(<span class="at">res=</span><span class="dv">600</span>, <span class="at">width =</span> <span class="dv">14</span>, <span class="at">height =</span> <span class="dv">11</span>, <span class="at">units =</span> <span class="st">'in'</span>, <span class="at">filename=</span><span class="st">"output/figure/mosaic.jpg"</span>)</span>
+<span id="cb34-2"><a href="#cb34-2"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">3</span>))</span>
+<span id="cb34-3"><a href="#cb34-3"></a></span>
+<span id="cb34-4"><a href="#cb34-4"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.4</span>, <span class="fl">0.5</span>, <span class="fl">0.6</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb34-5"><a href="#cb34-5"></a><span class="fu">plot</span>(dem, <span class="at">main =</span> <span class="st">"Elevation"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb34-6"><a href="#cb34-6"></a><span class="fu">plot</span>(erosion, <span class="at">main =</span> <span class="st">"Erosion"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">zlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">80</span>))</span>
+<span id="cb34-7"><a href="#cb34-7"></a><span class="fu">plot</span>(ndvi, <span class="at">main =</span> <span class="st">"NDVI"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb34-8"><a href="#cb34-8"></a></span>
+<span id="cb34-9"><a href="#cb34-9"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.4</span>, <span class="fl">0.5</span>, <span class="fl">0.6</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb34-10"><a href="#cb34-10"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>dem, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of elevation"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">480</span>,<span class="dv">520</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb34-11"><a href="#cb34-11"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>erosion, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of erosion"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">50</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb34-12"><a href="#cb34-12"></a><span class="fu">plot</span>(rhlist<span class="sc">$</span>ndvi, <span class="at">main=</span><span class="st">"Nonparametric estimate as function of NDVI"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">200</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span>F)</span>
+<span id="cb34-13"><a href="#cb34-13"></a></span>
+<span id="cb34-14"><a href="#cb34-14"></a><span class="fu">par</span>(<span class="at">mai =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.4</span>, <span class="fl">0.5</span>, <span class="fl">0.6</span>)) <span class="co"># bottom, left, top, right</span></span>
+<span id="cb34-15"><a href="#cb34-15"></a><span class="fu">plot</span>(<span class="fu">raster</span>(<span class="fu">Smooth</span>(<span class="fu">residuals</span>(mod1), <span class="at">sigma=</span><span class="dv">12</span>)), <span class="at">main=</span><span class="st">"Smoothed residual field of the fitted model"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb34-16"><a href="#cb34-16"></a><span class="fu">plot</span>(Pcf.pts, <span class="at">ylim=</span><span class="fu">c</span>(<span class="fl">0.5</span>,<span class="dv">4</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="st">"PCF on the unfitted model"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb34-17"><a href="#cb34-17"></a><span class="fu">plot</span>(Pcfinhom_mod1, <span class="at">ylim=</span><span class="fu">c</span>(<span class="fl">0.5</span>,<span class="dv">4</span>), <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">""</span>, <span class="at">legend=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="st">"PCF on the fitted model"</span>, <span class="at">cex.main =</span> <span class="fl">1.5</span>)</span>
+<span id="cb34-18"><a href="#cb34-18"></a><span class="fu">dev.off</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>png 
+  2 </code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
